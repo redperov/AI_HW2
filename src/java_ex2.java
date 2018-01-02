@@ -19,7 +19,7 @@ public class java_ex2 {
         final int boardSize = 5;
 
         //Read the data from the input file into the board.
-        char board[][] = readInput(inputFilePath, boardSize);
+        char[][] board = readInput(inputFilePath, boardSize);
 
         char solution = ' ';
 
@@ -35,7 +35,7 @@ public class java_ex2 {
      */
     public static char[][] readInput(String filePath, int boardSize){
 
-        char board[][] = new char[boardSize][boardSize];
+        char[][] board = new char[boardSize][boardSize];
 
         //Read data from input file.
         try {
