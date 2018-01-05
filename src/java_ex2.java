@@ -7,7 +7,7 @@ import java.io.*;
  */
 public class java_ex2 {
 
-    public static void main(String args[]){
+    public static void main(String args[]) {
 
         //Input file path.
         final String inputFilePath = "input.txt";
@@ -29,18 +29,19 @@ public class java_ex2 {
 
     /**
      * Reads the the board values from the input file.
-     * @param filePath input file path
+     *
+     * @param filePath  input file path
      * @param boardSize board size
      * @return board with filled values
      */
-    public static char[][] readInput(String filePath, int boardSize){
+    public static char[][] readInput(String filePath, int boardSize) {
 
         char[][] board = new char[boardSize][boardSize];
 
         //Read data from input file.
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath));
-            String rowRead;
+            String         rowRead;
 
             //Read lines containing board values..
             for (int row = 0; row < boardSize; row++) {
@@ -69,10 +70,11 @@ public class java_ex2 {
 
     /**
      * Writes the solution to the output file.
+     *
      * @param filePath output file path
      * @param solution solution
      */
-    public static void writeOutput(String filePath, char solution){
+    public static void writeOutput(String filePath, char solution) {
 
         //Write solution to output file.
         try (Writer writer = new BufferedWriter(new OutputStreamWriter(

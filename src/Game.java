@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 /**
  * Created by Danny on 01/01/2018.
  */
@@ -8,6 +10,145 @@ public class Game {
      */
     private Game() {
 
+    }
+
+    public static int minimax(Node node, int depth, boolean maximizingPlayer) {
+
+        if (depth == 0 || node.isTerminal()) {
+
+            return heuristic(node);
+        }
+
+        if (maximizingPlayer) {
+
+            int             bestValue = Integer.MIN_VALUE;
+            ArrayList<Node> children  = node.getSuccessors();
+
+            for (Node child : children) {
+
+                int v = minimax(child, depth - 1, false);
+                bestValue = Math.max(bestValue, v);
+            }
+
+            return bestValue;
+        } else {
+
+            int             bestValue = Integer.MAX_VALUE;
+            ArrayList<Node> children  = node.getSuccessors();
+
+            for (Node child : children) {
+
+                int v = minimax(child, depth - 1, true);
+                bestValue = Math.min(bestValue, v);
+            }
+
+            return bestValue;
+        }
+    }
+
+    public static int heuristic(Node node) {
+
+        //Count all the cells colors in advance.
+        node.countColors();
+
+        //Check if the node is terminal.
+        boolean isTerminal = node.isTerminal();
+
+        //Check if the cell is black.
+        if (node.getColor() == 'B') {
+
+            //Return maximum player heuristic.
+            return maxHeuristic(node, isTerminal);
+        } else {
+
+            //Return minimum player heuristic.
+            return minHeuristic(node, isTerminal);
+        }
+    }
+
+    private static int maxHeuristic(Node node, boolean isTerminal) {
+
+        //Check if node is terminal
+        if (isTerminal) {
+
+            //Check if the game ended with a draw.
+            if (isDraw(node)) {
+
+                return 0;
+            }
+
+            //Check if the player won the game.
+            if (isWon(node, true)) {
+
+                return Integer.MAX_VALUE;
+            }
+
+            return Integer.MIN_VALUE;
+        }
+
+        int blackCounter     = node.getBlackCounter();
+        int blackEdgeCounter = node.getBlackEdgeCounter();
+        int whiteCounter     = node.getWhiteCounter();
+        int whiteEdgeCounter = node.getWhiteEdgeCounter();
+
+        //Calculate the maximum player heuristic value.
+        int heuristicValue = (blackCounter - whiteCounter) + (blackEdgeCounter - whiteEdgeCounter);
+
+        return heuristicValue;
+    }
+
+    private static int minHeuristic(Node node, boolean isTerminal) {
+
+        //Check if node is terminal
+        if (isTerminal) {
+
+            //Check if the game ended with a draw.
+            if (isDraw(node)) {
+
+                return 0;
+            }
+
+            //Check if the player won the game.
+            if (isWon(node, false)) {
+
+                return Integer.MIN_VALUE;
+            }
+
+            return Integer.MAX_VALUE;
+        }
+
+        int blackCounter     = node.getBlackCounter();
+        int blackEdgeCounter = node.getBlackEdgeCounter();
+        int whiteCounter     = node.getWhiteCounter();
+        int whiteEdgeCounter = node.getWhiteEdgeCounter();
+
+        //Calculate the minimum player heuristic value.
+        int heuristicValue = (whiteCounter - blackCounter) + (whiteEdgeCounter - blackEdgeCounter);
+
+        return heuristicValue;
+    }
+
+    private static boolean isDraw(Node node) {
+
+        int blackCounter = node.getBlackCounter();
+        int whiteCounter = node.getWhiteCounter();
+        int emptyCounter = node.getEmptyCounter();
+
+        return (blackCounter == whiteCounter) && (emptyCounter == 0);
+
+    }
+
+    private static boolean isWon(Node node, boolean isMaximizing) {
+
+        int blackCounter = node.getBlackCounter();
+        int whiteCounter = node.getWhiteCounter();
+
+        if (isMaximizing) {
+
+            return blackCounter > whiteCounter;
+        }
+
+        return blackCounter < whiteCounter;
     }
 
     /**
