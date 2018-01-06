@@ -5,11 +5,89 @@ import java.util.ArrayList;
  */
 public class Game {
 
+    private static final int MAX_DEPTH = 3;
+    private static final int BOARD_SIZE = 5;
+
     /**
      * Private constructor.
      */
     private Game() {
 
+    }
+
+    public static char play(char[][] board){
+
+        Node node = new Node(board, BOARD_SIZE, 'B');
+        boolean isMaximizing = true;
+
+        while(!node.isTerminal()){
+
+            node = getBestMove(node, isMaximizing);
+            isMaximizing = !isMaximizing;
+        }
+
+        node.countColors();
+
+        //TODO should I add a check for isDraw?
+
+        if(node.getColor() == 'B'){
+
+            if(isWon(node, true)){
+                return 'B';
+            }
+            else{
+                return 'W';
+            }
+        }
+        else{
+
+            if(isWon(node, false)){
+
+                return 'W';
+            }
+            else{
+                return 'B';
+            }
+        }
+    }
+
+    private static Node getBestMove(Node node, boolean isMaximizing) {
+
+        Node bestChild = null;
+        int  bestValue;
+        int  tempValue;
+
+        if (isMaximizing) {
+
+            bestValue = Integer.MIN_VALUE;
+        } else {
+            bestValue = Integer.MAX_VALUE;
+        }
+
+        ArrayList<Node> children = node.getSuccessors();
+
+        for (Node child : children) {
+
+            tempValue = minimax(child, MAX_DEPTH, isMaximizing);
+
+            if (isMaximizing) {
+
+                if (tempValue > bestValue) {
+
+                    bestValue = tempValue;
+                    bestChild = child;
+                }
+            } else {
+
+                if (tempValue < bestValue) {
+
+                    bestValue = tempValue;
+                    bestChild = child;
+                }
+            }
+        }
+
+        return bestChild;
     }
 
     public static int minimax(Node node, int depth, boolean maximizingPlayer) {
