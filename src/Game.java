@@ -1,11 +1,15 @@
 import java.util.ArrayList;
 
 /**
- * Created by Danny on 01/01/2018.
+ * The class performs the game's logic.
+ * Contains static functions to use on given game boards.
  */
 public class Game {
 
-    private static final int MAX_DEPTH = 3;
+    //Max searching depth in the Minimax algorithm.
+    private static final int MAX_DEPTH  = 3;
+
+    //Board size.
     private static final int BOARD_SIZE = 5;
 
     /**
@@ -15,149 +19,134 @@ public class Game {
 
     }
 
-    public static char play(char[][] board){
+    /**
+     * Plays the game and finds the winning player.
+     * @param board game board
+     * @return winning color
+     */
+    public static char play(char[][] board) {
 
-        Node node = new Node(board, BOARD_SIZE, 'B');
+        Node    node         = new Node(board, BOARD_SIZE, 'B');
         boolean isMaximizing = true;
 
-        while(!node.isTerminal()){
+        //Run until a solution is found.
+        while (!node.isTerminal()) {
 
-            node = getBestMove(node, isMaximizing);
+            node = minimax(node, MAX_DEPTH, isMaximizing);
+
+            //System.out.println("Is maximizing: " + isMaximizing);
+            //printBoard(node.getBoard());
+            //System.out.println();
+
             isMaximizing = !isMaximizing;
         }
 
         node.countColors();
 
-        //TODO should I add a check for isDraw?
+        //Check who is the winner.
+        if (node.getColor() == 'B') {
 
-        if(node.getColor() == 'B'){
-
-            if(isWon(node, true)){
+            if (isWon(node, true)) {
                 return 'B';
-            }
-            else{
-                return 'W';
-            }
-        }
-        else{
-
-            if(isWon(node, false)){
-
-                return 'W';
-            }
-            else{
-                return 'B';
-            }
-        }
-    }
-
-    private static Node getBestMove(Node node, boolean isMaximizing) {
-
-        Node bestChild = null;
-        int  bestValue;
-        int  tempValue;
-
-        if (isMaximizing) {
-
-            bestValue = Integer.MIN_VALUE;
-        } else {
-            bestValue = Integer.MAX_VALUE;
-        }
-
-        ArrayList<Node> children = node.getSuccessors();
-
-        for (Node child : children) {
-
-            tempValue = minimax(child, MAX_DEPTH, isMaximizing);
-
-            if (isMaximizing) {
-
-                if (tempValue > bestValue) {
-
-                    bestValue = tempValue;
-                    bestChild = child;
-                }
             } else {
+                return 'W';
+            }
+        } else {
 
-                if (tempValue < bestValue) {
+            if (isWon(node, false)) {
 
-                    bestValue = tempValue;
-                    bestChild = child;
-                }
+                return 'W';
+            } else {
+                return 'B';
             }
         }
-
-        return bestChild;
     }
 
-    public static int minimax(Node node, int depth, boolean maximizingPlayer) {
+    /**
+     * Performs the Minimax algorithm.
+     * @param node starting node
+     * @param depth maximum search depth
+     * @param maximizingPlayer is a maximizing player
+     * @return next node
+     */
+    private static Node minimax(Node node, int depth, boolean maximizingPlayer) {
 
+        //Check if can't search any further.
         if (depth == 0 || node.isTerminal()) {
 
-            return heuristic(node);
+            node.setCost(heuristic(node));
+            return node;
         }
 
+        //Check is a maximizing player.
         if (maximizingPlayer) {
 
             int             bestValue = Integer.MIN_VALUE;
-            ArrayList<Node> children  = node.getSuccessors();
+            Node            bestChild = null;
+            ArrayList<Node> children  = node.getSuccessors(true);
 
             for (Node child : children) {
 
-                int v = minimax(child, depth - 1, false);
-                bestValue = Math.max(bestValue, v);
+                //Make a recursive call to Minimax with depth - 1 as a maximizing player.
+                Node v = minimax(child, depth - 1, false);
+
+                if(bestChild == null){
+                    bestChild = v;
+                }
+
+                //Check if received value is greater than the current bestValue.
+                if (v.getCost() > bestValue) {
+                    bestValue = v.getCost();
+                    bestChild = v;
+                }
             }
 
-            return bestValue;
+            return bestChild;
         } else {
 
             int             bestValue = Integer.MAX_VALUE;
-            ArrayList<Node> children  = node.getSuccessors();
+            Node            bestChild = null;
+            ArrayList<Node> children  = node.getSuccessors(false);
 
             for (Node child : children) {
 
-                int v = minimax(child, depth - 1, true);
-                bestValue = Math.min(bestValue, v);
+                //Make a recursive call to Minimax with depth - 1 as a minimizing player.
+                Node v = minimax(child, depth - 1, true);
+
+                if(bestChild == null){
+                    bestChild = v;
+                }
+
+                //Check if received value is greater than the current bestValue.
+                if (v.getCost() < bestValue) {
+                    bestValue = v.getCost();
+                    bestChild = v;
+                }
             }
 
-            return bestValue;
+            return bestChild;
         }
     }
 
-    public static int heuristic(Node node) {
+    /**
+     * Returns the heuristic value of a given node.
+     * @param node node
+     * @return heuristic value
+     */
+    private static int heuristic(Node node) {
 
         //Count all the cells colors in advance.
         node.countColors();
 
-        //Check if the node is terminal.
-        boolean isTerminal = node.isTerminal();
-
-        //Check if the cell is black.
-        if (node.getColor() == 'B') {
-
-            //Return maximum player heuristic.
-            return maxHeuristic(node, isTerminal);
-        } else {
-
-            //Return minimum player heuristic.
-            return minHeuristic(node, isTerminal);
-        }
-    }
-
-    private static int maxHeuristic(Node node, boolean isTerminal) {
-
         //Check if node is terminal
-        if (isTerminal) {
-
+        if (node.isTerminal()) {
             //Check if the game ended with a draw.
             if (isDraw(node)) {
-
                 return 0;
             }
 
             //Check if the player won the game.
             if (isWon(node, true)) {
-
                 return Integer.MAX_VALUE;
             }
 
@@ -175,37 +164,11 @@ public class Game {
         return heuristicValue;
     }
 
-    private static int minHeuristic(Node node, boolean isTerminal) {
-
-        //Check if node is terminal
-        if (isTerminal) {
-
-            //Check if the game ended with a draw.
-            if (isDraw(node)) {
-
-                return 0;
-            }
-
-            //Check if the player won the game.
-            if (isWon(node, false)) {
-
-                return Integer.MIN_VALUE;
-            }
-
-            return Integer.MAX_VALUE;
-        }
-
-        int blackCounter     = node.getBlackCounter();
-        int blackEdgeCounter = node.getBlackEdgeCounter();
-        int whiteCounter     = node.getWhiteCounter();
-        int whiteEdgeCounter = node.getWhiteEdgeCounter();
-
-        //Calculate the minimum player heuristic value.
-        int heuristicValue = (whiteCounter - blackCounter) + (whiteEdgeCounter - blackEdgeCounter);
-
-        return heuristicValue;
-    }
-
+    /**
+     * Checks if there is a draw in the game.
+     * @param node node
+     * @return is a draw
+     */
     private static boolean isDraw(Node node) {
 
         int blackCounter = node.getBlackCounter();
@@ -216,6 +179,12 @@ public class Game {
 
     }
 
+    /**
+     * Checks if there is a winner in the game.
+     * @param node node
+     * @param isMaximizing is a maximizing player
+     * @return is a win
+     */
     private static boolean isWon(Node node, boolean isMaximizing) {
 
         int blackCounter = node.getBlackCounter();
@@ -308,21 +277,51 @@ public class Game {
      */
     public static char[][] performMovement(int row, int column, char value, char[][] board, int boardSize) {
 
-        board[row][column] = value;
+        char[][] workBoard = copyBoard(board, boardSize);
+        workBoard[row][column] = value;
 
         //Try replacing the pieces in all the possible direction to the current players value.
-        board = fillRight(row, column, value, board, boardSize);
-        board = fillBottomRight(row, column, value, board, boardSize);
-        board = fillBottom(row, column, value, board, boardSize);
-        board = fillBottomLeft(row, column, value, board, boardSize);
-        board = fillLeft(row, column, value, board, boardSize);
-        board = fillTopLeft(row, column, value, board, boardSize);
-        board = fillTop(row, column, value, board, boardSize);
-        board = fillTopRight(row, column, value, board, boardSize);
+        workBoard = fillRight(row, column, value, workBoard, boardSize);
+        workBoard = fillBottomRight(row, column, value, workBoard, boardSize);
+        workBoard = fillBottom(row, column, value, workBoard, boardSize);
+        workBoard = fillBottomLeft(row, column, value, workBoard, boardSize);
+        workBoard = fillLeft(row, column, value, workBoard, boardSize);
+        workBoard = fillTopLeft(row, column, value, workBoard, boardSize);
+        workBoard = fillTop(row, column, value, workBoard, boardSize);
+        workBoard = fillTopRight(row, column, value, workBoard, boardSize);
 
-        return board;
+        return workBoard;
     }
 
+    /**
+     * Creates a copy of the given board.
+     * @param board game board
+     * @param boardSize board size
+     * @return copied game board
+     */
+    private static char[][] copyBoard(char[][] board, int boardSize) {
+
+        char[][] copiedArray = new char[boardSize][boardSize];
+
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+
+                copiedArray[i][j] = board[i][j];
+            }
+        }
+
+        return copiedArray;
+    }
+
+    /**
+     * Fills the cells in the right direction.
+     * @param row row
+     * @param column column
+     * @param value color
+     * @param board game board
+     * @param boardSize board size
+     * @return game board
+     */
     private static char[][] fillRight(int row, int column, char value, char[][] board, int boardSize) {
 
         //Check if not on the board boundary.
@@ -331,23 +330,17 @@ public class Game {
         }
 
         //Create a working board.
-        char[][] workBoard = board;
+        char[][] workBoard = copyBoard(board, boardSize);
 
         //Fill the working board in the current direction.
         for (int i = column + 1; i < boardSize; i++) {
 
             //If current cell is empty, fill it with player value.
-            if (workBoard[row][i] == 'E') {
+            if (workBoard[row][i] != value) {
                 workBoard[row][i] = value;
             } else {
 
-                //If found an opponent value in the current direction, confirm changes to original board.
-                if (workBoard[row][i] != value) {
-
-                    return workBoard;
-                }
-
-                break;
+                return workBoard;
             }
         }
 
@@ -355,218 +348,225 @@ public class Game {
         return board;
     }
 
+    /**
+     * Fills the cells in the bottom-right direction.
+     * @param row row
+     * @param column column
+     * @param value color
+     * @param board game board
+     * @param boardSize board size
+     * @return game board
+     */
     private static char[][] fillBottomRight(int row, int column, char value, char[][] board, int boardSize) {
-
-        //int     counter       = 0;
-        //boolean foundOpponent = false;
 
         //Check if not on the board boundary.
         if (column == boardSize - 1 || row == boardSize - 1) {
             return board;
         }
 
-        char[][] workBoard = board;
+        char[][] workBoard = copyBoard(board, boardSize);
 
         //Look for an opponent piece at the current direction.
         for (int i = row + 1, j = column + 1; i < boardSize && j < boardSize; i++, j++) {
 
-            if (workBoard[i][j] == 'E') {
+            if (workBoard[i][j] != value) {
                 workBoard[i][j] = value;
             } else {
 
-                if (workBoard[i][j] != value) {
-                    //foundOpponent = true;
-                    return workBoard;
-                }
-
-                break;
+                return workBoard;
             }
         }
 
         return board;
     }
 
+    /**
+     * Fills the cells in the bottom direction.
+     * @param row row
+     * @param column column
+     * @param value color
+     * @param board game board
+     * @param boardSize board size
+     * @return game board
+     */
     private static char[][] fillBottom(int row, int column, char value, char[][] board, int boardSize) {
-
-        //int     counter       = 0;
-        //boolean foundOpponent = false;
 
         //Check if not on the board boundary.
         if (row == boardSize - 1) {
             return board;
         }
 
-        char[][] workBoard = board;
+        char[][] workBoard = copyBoard(board, boardSize);
 
         //Look for an opponent piece at the current direction.
         for (int i = row + 1; i < boardSize; i++) {
 
-            if (workBoard[i][column] == 'E') {
+            if (workBoard[i][column] != value) {
                 workBoard[i][column] = value;
             } else {
 
-                if (board[i][column] != value) {
-                    //foundOpponent = true;
-                    return workBoard;
-                }
-
-                break;
+                return workBoard;
             }
         }
 
         return board;
     }
 
+    /**
+     * Fills the cells in the bottom left direction.
+     * @param row row
+     * @param column column
+     * @param value color
+     * @param board game board
+     * @param boardSize board size
+     * @return game board
+     */
     private static char[][] fillBottomLeft(int row, int column, char value, char[][] board, int boardSize) {
-
-        //int     counterI      = 0;
-        //int     counterJ      = column;
-        //boolean foundOpponent = false;
 
         //Check if not on the board boundary.
         if (row == boardSize - 1 || column == 0) {
             return board;
         }
 
-        char[][] workBoard = board;
+        char[][] workBoard = copyBoard(board, boardSize);
 
         //Look for an opponent piece at the current direction.
-        for (int i = row + 1, j = column - 1; i < boardSize && j > 0; i++, j--) {
+        for (int i = row + 1, j = column - 1; i < boardSize && j >= 0; i++, j--) {
 
-            if (workBoard[i][j] == 'E') {
+            if (workBoard[i][j] != value) {
                 workBoard[i][j] = value;
             } else {
 
-                if (workBoard[i][j] != value) {
-                    //foundOpponent = true;
-                    return workBoard;
-                }
-
-                break;
+                return workBoard;
             }
         }
 
         return board;
     }
 
+    /**
+     * Fills the cells in the left direction.
+     * @param row row
+     * @param column column
+     * @param value color
+     * @param board game board
+     * @param boardSize board size
+     * @return game board
+     */
     private static char[][] fillLeft(int row, int column, char value, char[][] board, int boardSize) {
-
-        //int     counter       = 0;
-        //boolean foundOpponent = false;
 
         //Check if not on the board boundary.
         if (column == 0) {
             return board;
         }
 
-        char[][] workBoard = board;
+        char[][] workBoard = copyBoard(board, boardSize);
 
         //Look for an opponent piece at the current direction.
-        for (int i = column - 1; i < boardSize; i--) {
+        for (int i = column - 1; i >= 0; i--) {
 
-            if (workBoard[row][i] == 'E') {
+            if (workBoard[row][i] != value) {
                 workBoard[row][i] = value;
             } else {
 
-                if (workBoard[row][i] != value) {
-                    //foundOpponent = true;
-                    return workBoard;
-                }
-
-                break;
+                return workBoard;
             }
         }
 
         return board;
     }
 
+    /**
+     * Fills the cells in the upper-left direction.
+     * @param row row
+     * @param column column
+     * @param value color
+     * @param board game board
+     * @param boardSize board size
+     * @return game board
+     */
     private static char[][] fillTopLeft(int row, int column, char value, char[][] board, int boardSize) {
-
-        //int     counter       = 0;
-        //boolean foundOpponent = false;
 
         //Check if not on the board boundary.
         if (column == 0 || row == 0) {
             return board;
         }
 
-        char[][] workBoard = board;
+        char[][] workBoard = copyBoard(board, boardSize);
 
         //Look for an opponent piece at the current direction.
-        for (int i = row - 1, j = column - 1; i < boardSize; i--, j--) {
+        for (int i = row - 1, j = column - 1; i >= 0 && j >= 0; i--, j--) {
 
-            if (workBoard[i][j] == 'E') {
+            if (workBoard[i][j] != value) {
                 workBoard[i][j] = value;
             } else {
 
-                if (workBoard[i][j] != value) {
-                    //foundOpponent = true;
-                    return workBoard;
-                }
-
-                break;
+                return workBoard;
             }
         }
 
         return board;
     }
 
+    /**
+     * Fills the cells in the top direction.
+     * @param row row
+     * @param column column
+     * @param value color
+     * @param board game board
+     * @param boardSize board size
+     * @return game board
+     */
     private static char[][] fillTop(int row, int column, char value, char[][] board, int boardSize) {
-
-        //int     counter       = 0;
-        //boolean foundOpponent = false;
 
         //Check if not on the board boundary.
         if (row == 0) {
             return board;
         }
 
-        char[][] workBoard = board;
+        char[][] workBoard = copyBoard(board, boardSize);
 
         //Look for an opponent piece at the current direction.
-        for (int i = row - 1; i < boardSize; i--) {
+        for (int i = row - 1; i >= 0; i--) {
 
-            if (workBoard[i][column] == 'E') {
+            if (workBoard[i][column] != value) {
                 workBoard[i][column] = value;
             } else {
 
-                if (workBoard[i][column] != value) {
-                    //foundOpponent = true;
-                    return workBoard;
-                }
-
-                break;
+                //foundOpponent = true;
+                return workBoard;
             }
         }
 
         return board;
     }
 
+    /**
+     * Fills the cells in the upper-right direction.
+     * @param row row
+     * @param column column
+     * @param value color
+     * @param board game board
+     * @param boardSize board size
+     * @return game board
+     */
     private static char[][] fillTopRight(int row, int column, char value, char[][] board, int boardSize) {
-
-        //int     counter       = 0;
-        //boolean foundOpponent = false;
 
         //Check if not on the board boundary.
         if (column == boardSize - 1 || row == 0) {
             return board;
         }
 
-        char[][] workBoard = board;
+        char[][] workBoard = copyBoard(board, boardSize);
 
         //Look for an opponent piece at the current direction.
-        for (int i = row - 1, j = column + 1; i < boardSize; i--, j++) {
+        for (int i = row - 1, j = column + 1; i >= 0 && j < boardSize; i--, j++) {
 
-            if (workBoard[i][j] == 'E') {
+            if (workBoard[i][j] != value) {
                 workBoard[i][j] = value;
             } else {
 
-                if (workBoard[i][j] != value) {
-                    //foundOpponent = true;
-                    return workBoard;
-                }
-
-                break;
+                return workBoard;
             }
         }
 

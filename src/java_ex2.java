@@ -21,7 +21,8 @@ public class java_ex2 {
         //Read the data from the input file into the board.
         char[][] board = readInput(inputFilePath, boardSize);
 
-        char solution = ' ';
+        //Get the winning player in the game.
+        char solution = Game.play(board);
 
         //Write the solution to the output file.
         writeOutput(outputFilePath, solution);
